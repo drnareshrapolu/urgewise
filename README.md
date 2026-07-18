@@ -34,7 +34,7 @@ npm install
 ```text
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_key_here
-GEMINI_MODEL=gemini-flash-latest
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 4. Start the app:

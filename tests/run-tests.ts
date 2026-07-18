@@ -8,6 +8,7 @@ import { createApp } from "../server/app.js";
 import { openDatabase } from "../server/db.js";
 import { computeInsightContext, hashContext, triggeredBy } from "../server/insights.js";
 import type { Habit, HabitLog } from "../server/insights.js";
+import { geminiGenerationConfig } from "../server/llm.js";
 import { detectSafetyRisk, safetyResponse } from "../server/safety.js";
 
 const habit: Habit = {
@@ -37,6 +38,12 @@ function log(offsetDays: number, status: HabitLog["status"], trigger: string): H
 }
 
 async function run() {
+  assert.deepEqual(
+    geminiGenerationConfig("gemini-2.5-flash", 300),
+    { maxOutputTokens: 512, temperature: 0.5, thinkingConfig: { thinkingBudget: 0 } },
+    "short Gemini coaching calls should reserve output tokens instead of spending them on thinking"
+  );
+
   assert.equal(resolveGatewayPath("/api/auth/me"), "/api/auth/me", "gateway should accept application API paths");
   assert.equal(resolveGatewayPath("/api/../server"), null, "gateway should reject traversal paths");
 

@@ -62,6 +62,14 @@ function providerConfig() {
   };
 }
 
+export function geminiGenerationConfig(model: string, maxTokens: number) {
+  return {
+    maxOutputTokens: Math.max(maxTokens, 512),
+    temperature: 0.5,
+    thinkingConfig: model.startsWith("gemini-3") ? { thinkingLevel: "low" } : { thinkingBudget: 0 }
+  };
+}
+
 async function callModel(options: {
   maxTokens: number;
   context: unknown;
@@ -130,9 +138,7 @@ ${conversationText}`;
             parts: [{ text: prompt }]
           }
         ],
-        generationConfig: {
-          maxOutputTokens: options.maxTokens
-        }
+        generationConfig: geminiGenerationConfig(model, options.maxTokens)
       })
     });
 
@@ -140,9 +146,14 @@ ${conversationText}`;
     if (!response.ok) {
       throw Object.assign(new Error("Gemini API request failed"), { status: response.status, providerError: payload });
     }
+    const text = extractGeminiText(payload);
+    if (!text) {
+      throw Object.assign(new Error("Gemini returned an empty response"), { status: 502, providerError: payload });
+    }
+
     return {
       id: typeof payload.responseId === "string" ? payload.responseId : null,
-      text: extractGeminiText(payload),
+      text,
       model
     };
   }

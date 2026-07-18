@@ -299,9 +299,14 @@ export default function App() {
                   <h2>{activeHabit.name}</h2>
                   <p>{activeHabit.target_behavior}</p>
                 </div>
-                <button className="primary-button" onClick={() => generate(false)} disabled={busy === "insight" || busy === "regenerate"}>
+                <button
+                  className="primary-button"
+                  onClick={() => generate(false)}
+                  disabled={busy === "insight" || busy === "regenerate"}
+                  aria-busy={busy === "insight"}
+                >
                   {busy === "insight" ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
-                  Generate Insight
+                  {busy === "insight" ? "Generating..." : "Generate Insight"}
                 </button>
               </section>
 
@@ -351,16 +356,23 @@ export default function App() {
                     <h2>AI Insight</h2>
                   </div>
                   <div className="insight-box">
-                    <p>{insight?.content || latestNudge || "No AI insight generated yet."}</p>
+                    <p aria-live="polite">
+                      {busy === "insight" ? "Gemini is analyzing your habit pattern..." : insight?.content || latestNudge || "No AI insight generated yet."}
+                    </p>
                     {(insight || latestNudge) && (
                       <p className="mt-3 text-xs text-stone-500">
                         {insight?.is_cached ? "Cached" : "Generated"} {formatDate(insight?.generated_at)}
                       </p>
                     )}
                   </div>
-                  <button className="secondary-button mt-3 w-full" onClick={() => generate(true)} disabled={busy === "regenerate"}>
+                  <button
+                    className="secondary-button mt-3 w-full"
+                    onClick={() => generate(true)}
+                    disabled={busy === "regenerate"}
+                    aria-busy={busy === "regenerate"}
+                  >
                     {busy === "regenerate" ? <Loader2 className="animate-spin" size={16} /> : <RefreshCcw size={16} />}
-                    Regenerate
+                    {busy === "regenerate" ? "Regenerating..." : "Regenerate"}
                   </button>
                 </section>
               </div>

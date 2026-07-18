@@ -19,7 +19,7 @@ Required for Gemini:
 ```text
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your-current-gemini-key
-GEMINI_MODEL=gemini-flash-latest
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 After changing environment variables, redeploy the latest production deployment. Environment changes do not alter an already-built deployment.
