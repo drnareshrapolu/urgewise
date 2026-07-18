@@ -1,14 +1,17 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import bcrypt from "bcryptjs";
+import cookieParser from "cookie-parser";
 import express from "express";
 import { config } from "./config.ts";
-import { useDemoUser } from "./auth.ts";
+import { clearSessionCookie, requireAuth, setSessionCookie, signSession } from "./auth.ts";
 import type { Db } from "./db";
 import { getHabitForUser, getLogsForHabit, openDatabase } from "./db.ts";
 import { computeInsightContext } from "./insights.ts";
 import { generateCoachReply, generateInsight } from "./llm.ts";
 import { detectSafetyRisk, safetyResponse } from "./safety.ts";
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const statuses = new Set(["relapse", "resisted", "neutral"]);
 const recentRequests = new Map<string, number[]>();
 
@@ -37,6 +40,10 @@ function rateLimit(key: string, limit = 8, windowMs = 60_000): boolean {
   return true;
 }
 
+function clientIp(req: express.Request): string {
+  return req.ip || req.socket.remoteAddress || "unknown";
+}
+
 function publicAiError(error: unknown, fallback: string): { status: number; message: string } {
   const status = typeof error === "object" && error && "status" in error ? Number(error.status) : 500;
   const message =
@@ -50,23 +57,86 @@ function publicAiError(error: unknown, fallback: string): { status: number; mess
 
 export function createApp(db: Db = openDatabase()) {
   const app = express();
-  const demoUser = useDemoUser(db);
+  const authRequired = requireAuth(db);
+  app.disable("x-powered-by");
+  app.set("trust proxy", 1);
   app.use(express.json({ limit: "1mb" }));
+  app.use(cookieParser());
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
   });
 
-  app.get("/api/auth/me", demoUser, (req, res) => {
+  app.post("/api/auth/signup", (req, res) => {
+    if (!rateLimit(`signup:${clientIp(req)}`, 6, 5 * 60_000)) {
+      return res.status(429).json({ error: "Too many signup attempts. Try again shortly." });
+    }
+
+    const email = cleanText(req.body.email).toLowerCase();
+    const password = cleanText(req.body.password).slice(0, 128);
+    if (!emailRegex.test(email) || password.length < 8) {
+      return res.status(400).json({ error: "Use a valid email and a password of at least 8 characters" });
+    }
+    if (db.prepare("SELECT id FROM users WHERE email = ?").get(email)) {
+      return res.status(409).json({ error: "An account already exists for that email" });
+    }
+
+    const user = { id: randomUUID(), email };
+    try {
+      db.prepare("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
+        user.id,
+        user.email,
+        bcrypt.hashSync(password, 10),
+        new Date().toISOString()
+      );
+    } catch {
+      return res.status(409).json({ error: "An account already exists for that email" });
+    }
+
+    setSessionCookie(res, signSession(user));
+    return res.status(201).json({ user });
+  });
+
+  app.post("/api/auth/login", (req, res) => {
+    const email = cleanText(req.body.email).toLowerCase();
+    if (!rateLimit(`login:${clientIp(req)}:${email}`, 8, 5 * 60_000)) {
+      return res.status(429).json({ error: "Too many login attempts. Try again shortly." });
+    }
+
+    const password = cleanText(req.body.password).slice(0, 128);
+    const row = db.prepare("SELECT id, email, password_hash FROM users WHERE email = ?").get(email) as
+      | { id: string; email: string; password_hash: string }
+      | undefined;
+    const passwordMatches = row?.password_hash.startsWith("$2") && bcrypt.compareSync(password, row.password_hash);
+    if (!row || !passwordMatches) return res.status(401).json({ error: "Invalid email or password" });
+
+    const user = { id: row.id, email: row.email };
+    setSessionCookie(res, signSession(user));
+    return res.json({ user });
+  });
+
+  app.post("/api/auth/logout", (_req, res) => {
+    clearSessionCookie(res);
+    res.json({ ok: true });
+  });
+
+  app.get("/api/auth/me", authRequired, (req, res) => {
     res.json({ user: req.user });
   });
 
-  app.get("/api/habits", demoUser, (req, res) => {
+  app.get("/api/habits", authRequired, (req, res) => {
     const habits = db.prepare("SELECT * FROM habits WHERE user_id = ? ORDER BY created_at DESC").all(req.user!.id);
     res.json({ habits });
   });
 
-  app.post("/api/habits", demoUser, (req, res) => {
+  app.post("/api/habits", authRequired, (req, res) => {
     const name = cleanText(req.body.name);
     const category = cleanText(req.body.category, "general");
     const target = cleanText(req.body.target_behavior);
@@ -91,13 +161,13 @@ export function createApp(db: Db = openDatabase()) {
     res.status(201).json({ habit });
   });
 
-  app.get("/api/habits/:habitId/logs", demoUser, (req, res) => {
+  app.get("/api/habits/:habitId/logs", authRequired, (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
     res.json({ logs: getLogsForHabit(db, habit.id) });
   });
 
-  app.post("/api/habits/:habitId/logs", demoUser, (req, res) => {
+  app.post("/api/habits/:habitId/logs", authRequired, (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
 
@@ -139,7 +209,7 @@ export function createApp(db: Db = openDatabase()) {
     res.status(201).json({ log });
   });
 
-  app.get("/api/habits/:habitId/summary", demoUser, (req, res) => {
+  app.get("/api/habits/:habitId/summary", authRequired, (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
     const context = computeInsightContext(habit, getLogsForHabit(db, habit.id));
@@ -149,7 +219,7 @@ export function createApp(db: Db = openDatabase()) {
     res.json({ habit, context, latestNudge });
   });
 
-  app.post("/api/habits/:habitId/insights", demoUser, async (req, res) => {
+  app.post("/api/habits/:habitId/insights", authRequired, async (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
     if (!rateLimit(`insights:${req.user!.id}`)) return res.status(429).json({ error: "Too many AI requests. Try again soon." });
@@ -163,7 +233,7 @@ export function createApp(db: Db = openDatabase()) {
     }
   });
 
-  app.get("/api/habits/:habitId/chat", demoUser, (req, res) => {
+  app.get("/api/habits/:habitId/chat", authRequired, (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
     const session = getOrCreateSession(db, req.user!.id, habit.id);
@@ -171,7 +241,7 @@ export function createApp(db: Db = openDatabase()) {
     res.json({ session, messages });
   });
 
-  app.post("/api/habits/:habitId/chat", demoUser, async (req, res) => {
+  app.post("/api/habits/:habitId/chat", authRequired, async (req, res) => {
     const habit = getHabitForUser(db, req.user!.id, routeParam(req.params.habitId));
     if (!habit) return res.status(404).json({ error: "Habit not found" });
     if (!rateLimit(`chat:${req.user!.id}`)) return res.status(429).json({ error: "Too many coach requests. Try again soon." });

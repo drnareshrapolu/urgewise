@@ -65,18 +65,35 @@ async function run() {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "urgewise-"));
   const db = openDatabase(path.join(tempDir, "test.sqlite"));
   const app = createApp(db);
+  const agent = request.agent(app);
 
-  const seededHabits = await request(app).get("/api/habits").expect(200);
-  assert.equal(seededHabits.body.habits.length, 1, "demo mode should expose the seeded habit without login");
+  const unauthorized = await request(app).get("/api/habits").expect(401);
+  assert.equal(unauthorized.headers["x-frame-options"], "DENY", "API responses should include security headers");
 
-  const createdHabit = await request(app)
+  const signup = await agent.post("/api/auth/signup").send({ email: "tester@example.com", password: "strong-password" }).expect(201);
+  assert.equal(signup.body.user.email, "tester@example.com", "signup should return the new user");
+  await agent.get("/api/auth/me").expect(200);
+
+  const createdHabit = await agent
     .post("/api/habits")
     .send({ name: "Sugar snacking", category: "food", target_behavior: "Avoid candy after lunch" })
     .expect(201);
-  assert.equal(createdHabit.body.habit.name, "Sugar snacking", "demo mode should create real habits");
+  assert.equal(createdHabit.body.habit.name, "Sugar snacking", "authenticated users should create real habits");
 
-  const habits = await request(app).get("/api/habits").expect(200);
-  assert.equal(habits.body.habits.length, 2, "created habit should be listed for the demo user");
+  const habits = await agent.get("/api/habits").expect(200);
+  assert.equal(habits.body.habits.length, 1, "created habit should be listed for the signed-in user");
+
+  const cookies = signup.headers["set-cookie"] as unknown as string[];
+  const sessionCookie = cookies[0].split(";", 1)[0];
+  const secondDb = openDatabase(path.join(tempDir, "second-function.sqlite"));
+  const secondApp = createApp(secondDb);
+  await request(secondApp).get("/api/habits").set("Cookie", sessionCookie).expect(200);
+  secondDb.close();
+
+  await agent.post("/api/auth/logout").expect(200);
+  await agent.get("/api/habits").expect(401);
+  await agent.post("/api/auth/login").send({ email: "tester@example.com", password: "wrong-password" }).expect(401);
+  await agent.post("/api/auth/login").send({ email: "tester@example.com", password: "strong-password" }).expect(200);
 
   db.close();
   fs.rmSync(tempDir, { recursive: true, force: true });

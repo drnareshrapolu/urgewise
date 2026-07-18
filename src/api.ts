@@ -20,6 +20,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  me: () => request<{ user: import("./types").User }>("/api/auth/me"),
+  login: (email: string, password: string) =>
+    request<{ user: import("./types").User }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password })
+    }),
+  signup: (email: string, password: string) =>
+    request<{ user: import("./types").User }>("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password })
+    }),
+  logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   habits: () => request<{ habits: import("./types").Habit[] }>("/api/habits"),
   createHabit: (habit: { name: string; category: string; target_behavior: string }) =>
     request<{ habit: import("./types").Habit }>("/api/habits", {

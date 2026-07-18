@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import bcrypt from "bcryptjs";
 import { config } from "./config.ts";
 import type { Habit, HabitLog } from "./insights.ts";
 
@@ -12,7 +13,7 @@ export function openDatabase(databasePath = config.databasePath): Db {
   const db = new DatabaseSync(databasePath);
   db.exec("PRAGMA foreign_keys = ON");
   migrate(db);
-  seedDemo(db);
+  seedConfiguredUser(db);
   return db;
 }
 
@@ -95,48 +96,28 @@ export function migrate(db: Db): void {
   `);
 }
 
-export function seedDemo(db: Db): void {
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(config.demoEmail) as { id: string } | undefined;
-  if (existing) return;
+export function seedConfiguredUser(db: Db): void {
+  if (!config.seedUserEmail || !config.seedUserPassword) return;
 
-  const userId = randomUUID();
-  const habitId = randomUUID();
-  const now = new Date();
+  const existing = db.prepare("SELECT id, password_hash FROM users WHERE email = ?").get(config.seedUserEmail) as
+    | { id: string; password_hash: string }
+    | undefined;
+  const passwordHash = bcrypt.hashSync(config.seedUserPassword, 10);
 
-  db.prepare("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
-    userId,
-    config.demoEmail,
-    "demo-mode-disabled",
-    now.toISOString()
-  );
-  db.prepare("INSERT INTO habits (id, user_id, name, category, target_behavior, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(
-    habitId,
-    userId,
-    "Evening doomscrolling",
-    "screen time",
-    "Stop scrolling in bed after 10pm",
-    now.toISOString()
-  );
-
-  const logs = [
-    [-12, "relapse", "Stayed up after a stressful work message.", "tense", 8, "work stress", "in bed"],
-    [-10, "resisted", "Put the phone outside the room.", "steady", 4, "bedtime boredom", "bedroom"],
-    [-8, "relapse", "Opened short videos after dinner.", "tired", 7, "after dinner", "sofa"],
-    [-6, "resisted", "Read a paperback for 20 minutes instead.", "calm", 3, "bedtime boredom", "bedroom"],
-    [-4, "neutral", "Used the phone but stopped before midnight.", "okay", 5, "habit loop", "bedroom"],
-    [-2, "resisted", "Charged the phone in the kitchen.", "proud", 2, "bedtime boredom", "kitchen"],
-    [-1, "resisted", "Did breathing exercise when the urge hit.", "calm", 3, "work stress", "bedroom"]
-  ] as const;
-
-  for (const [offset, status, note, mood, urge, trigger, context] of logs) {
-    const timestamp = new Date(now.getTime() + offset * 86_400_000);
-    timestamp.setHours(22, 30, 0, 0);
-    db.prepare(`
-      INSERT INTO habit_logs
-      (id, habit_id, timestamp, status, note, mood, urge_level, trigger, context, timezone, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(randomUUID(), habitId, timestamp.toISOString(), status, note, mood, urge, trigger, context, "Asia/Kolkata", now.toISOString());
+  if (existing) {
+    if (!bcrypt.compareSync(config.seedUserPassword, existing.password_hash)) {
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, existing.id);
+    }
+    return;
   }
+
+  const digest = createHash("sha256").update(config.seedUserEmail).digest("hex").slice(0, 24);
+  db.prepare("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
+    `seed-${digest}`,
+    config.seedUserEmail,
+    passwordHash,
+    new Date().toISOString()
+  );
 }
 
 export function getHabitForUser(db: Db, userId: string, habitId: string): Habit | undefined {

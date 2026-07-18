@@ -1,65 +1,47 @@
-# UrgeWise Deployment Notes
+# UrgeWise Deployment
 
-## GitHub
+## Vercel First Pass
 
-This repository is safe to push publicly because `.env`, `data/`, `dist/`, `node_modules/`, and logs are ignored.
+The GitHub repository is connected to the Vercel project. A push to `main` starts a production deployment.
 
-Do not commit real API keys. Use `.env` locally and hosted environment variables in deployment platforms.
+In Vercel, open `Project -> Settings -> Environment Variables` and configure all environments used by the deployment.
 
-## Local Demo With Gemini
-
-Create `C:\Users\USER\Documents\Main\.env`:
+Required for authentication:
 
 ```text
-PORT=4000
-DATABASE_PATH=./data/urgewise.sqlite
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=your_gemini_key_here
-GEMINI_MODEL=gemini-flash-latest
+JWT_SECRET=at-least-32-random-characters
+SEED_USER_EMAIL=reviewer@example.com
+SEED_USER_PASSWORD=a-strong-unique-password-at-least-12-characters
 ```
 
-Then run:
-
-```bash
-npm run dev
-```
-
-## Vercel Environment Variables
-
-If deploying through Vercel, add these in:
-
-```text
-Project -> Settings -> Environment Variables
-```
-
-Required:
+Required for Gemini:
 
 ```text
 LLM_PROVIDER=gemini
-GEMINI_API_KEY=your_gemini_key_here
+GEMINI_API_KEY=your-current-gemini-key
 GEMINI_MODEL=gemini-flash-latest
 ```
 
-Optional alternatives:
+After changing environment variables, redeploy the latest production deployment. Environment changes do not alter an already-built deployment.
+
+Verify these URLs after deployment:
 
 ```text
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=your_anthropic_key
-ANTHROPIC_MODEL=claude-3-5-sonnet-latest
+https://YOUR-DOMAIN/api/health
+https://YOUR-DOMAIN/
 ```
 
-```text
-LLM_PROVIDER=openai
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-5.6-luna
-```
+`/api/health` should return JSON with `"ok": true`. The root page should show the UrgeWise sign-in screen.
 
-## Persistence Warning
+## Secret Handling
 
-UrgeWise currently uses SQLite for fast local/demo persistence. Vercel serverless functions do not provide a normal durable local filesystem for SQLite data. For a reliable judged deployment, use one of these paths:
+- Never commit `.env` files or API keys.
+- Use a unique production `JWT_SECRET` and reviewer password.
+- Rotate any API key that has been pasted into chat, source code, screenshots, or logs.
+- Restrict the Gemini key to the intended API and quota where possible.
 
-1. Demo locally with SQLite and a real Gemini key.
-2. Deploy the full Express app to Render, Railway, Fly, or another Node host with durable disk.
-3. Migrate the DB layer to managed Postgres, such as Neon or Supabase, before using Vercel for the full app.
+## Persistence Limitation
 
-For the hackathon anti-disqualification rule, the safest route is a local or full Node-hosted demo where the app can prove real persisted rows, real auth, and real backend LLM calls.
+The current first-pass Vercel deployment uses SQLite in the function's temporary filesystem. Authentication and all application logic are real, but newly created accounts and behavior data can reset when Vercel replaces a function instance.
+
+For durable production accounts and history, migrate the database layer to managed Postgres (for example Neon, Supabase, or Vercel Postgres), or deploy the Node server to a host with a persistent disk. Do not claim durable persistence from this Vercel first pass until that migration is complete.

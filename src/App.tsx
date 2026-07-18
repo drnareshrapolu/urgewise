@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   CalendarCheck,
   Loader2,
+  LogOut,
   MessageCircle,
   Plus,
   RefreshCcw,
@@ -16,9 +17,11 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "./api";
-import type { ChatMessage, Habit, HabitLog, Insight, InsightContext } from "./types";
+import { AuthScreen, SessionLoading } from "./AuthScreen";
+import type { ChatMessage, Habit, HabitLog, Insight, InsightContext, User } from "./types";
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [activeHabitId, setActiveHabitId] = useState("");
   const [logs, setLogs] = useState<HabitLog[]>([]);
@@ -28,6 +31,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [checkingSession, setCheckingSession] = useState(true);
   const [habitLoading, setHabitLoading] = useState(false);
   const [urgeLevel, setUrgeLevel] = useState(5);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -35,8 +39,17 @@ export default function App() {
   const activeHabit = habits.find((habit) => habit.id === activeHabitId) ?? null;
 
   useEffect(() => {
-    void loadHabits();
+    api
+      .me()
+      .then(({ user }) => setUser(user))
+      .catch(() => undefined)
+      .finally(() => setCheckingSession(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadHabits();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!activeHabitId) return;
@@ -70,6 +83,37 @@ export default function App() {
       setError(error instanceof Error ? error.message : "Habit data loading failed");
     } finally {
       setHabitLoading(false);
+    }
+  }
+
+  async function handleAuth(email: string, password: string, mode: "login" | "signup") {
+    setBusy(mode);
+    setError("");
+    try {
+      const result = mode === "login" ? await api.login(email, password) : await api.signup(email, password);
+      setUser(result.user);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Authentication failed");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function logout() {
+    setBusy("logout");
+    try {
+      await api.logout();
+    } finally {
+      setUser(null);
+      setHabits([]);
+      setActiveHabitId("");
+      setLogs([]);
+      setMessages([]);
+      setContext(null);
+      setInsight(null);
+      setLatestNudge("");
+      setError("");
+      setBusy("");
     }
   }
 
@@ -163,6 +207,9 @@ export default function App() {
 
   const chartData = useMemo(() => buildChartData(logs), [logs]);
 
+  if (checkingSession) return <SessionLoading />;
+  if (!user) return <AuthScreen onSubmit={handleAuth} busy={busy} error={error} />;
+
   return (
     <main className="min-h-screen bg-paper text-ink">
       <header className="border-b border-stone-200 bg-white/85 backdrop-blur">
@@ -177,7 +224,10 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="rounded-md border border-stone-200 bg-stone-50 px-3 py-1 text-sm text-stone-600">Demo mode</span>
+            <span className="hidden text-sm text-stone-600 sm:inline">{user.email}</span>
+            <button className="icon-button" onClick={() => void logout()} disabled={busy === "logout"} aria-label="Log out" title="Log out">
+              {busy === "logout" ? <Loader2 className="animate-spin" size={18} /> : <LogOut size={18} />}
+            </button>
           </div>
         </div>
       </header>
