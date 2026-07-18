@@ -82,6 +82,10 @@ npm test
 npm run build
 ```
 
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for GitHub, Gemini API key, and Vercel environment-variable notes.
+
 ## Judge Demo Flow
 
 1. Log in with the seeded demo account.
