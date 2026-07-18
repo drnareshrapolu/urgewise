@@ -1,6 +1,6 @@
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const gatewayUrl = `/api/gateway?path=${encodeURIComponent(path)}`;
-  const response = await fetch(gatewayUrl, {
+  const requestUrl = import.meta.env.DEV ? path : `/api/gateway?path=${encodeURIComponent(path)}`;
+  const response = await fetch(requestUrl, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
