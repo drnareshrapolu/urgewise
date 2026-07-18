@@ -1,4 +1,5 @@
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 
@@ -6,11 +7,12 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
+const defaultDatabasePath = process.env.VERCEL ? path.join(os.tmpdir(), "urgewise.sqlite") : path.resolve(rootDir, "./data/urgewise.sqlite");
 
 export const config = {
   rootDir,
   port: Number(process.env.PORT ?? 4000),
-  databasePath: path.resolve(rootDir, process.env.DATABASE_PATH ?? "./data/urgewise.sqlite"),
+  databasePath: process.env.DATABASE_PATH ? path.resolve(rootDir, process.env.DATABASE_PATH) : defaultDatabasePath,
   jwtSecret: process.env.JWT_SECRET ?? "dev-only-change-me",
   llmProvider: (process.env.LLM_PROVIDER ?? "anthropic").toLowerCase(),
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
