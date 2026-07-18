@@ -39,7 +39,7 @@ function log(offsetDays: number, status: HabitLog["status"], trigger: string): H
 
 async function run() {
   assert.deepEqual(
-    geminiGenerationConfig("gemini-2.5-flash", 300),
+    geminiGenerationConfig("gemini-flash-latest", 300),
     { maxOutputTokens: 512, temperature: 0.5, thinkingConfig: { thinkingBudget: 0 } },
     "short Gemini coaching calls should reserve output tokens instead of spending them on thinking"
   );

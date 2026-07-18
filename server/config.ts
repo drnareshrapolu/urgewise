@@ -20,7 +20,7 @@ export const config = {
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-5.6-luna",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
-  geminiModel: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+  geminiModel: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
   seedUserEmail: (process.env.SEED_USER_EMAIL ?? "").trim().toLowerCase(),
   seedUserPassword: process.env.SEED_USER_PASSWORD ?? "",
   isProduction: process.env.NODE_ENV === "production"
