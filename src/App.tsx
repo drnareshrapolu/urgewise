@@ -119,7 +119,8 @@ export default function App() {
 
   async function addHabit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setBusy("habit");
     setError("");
     try {
@@ -128,7 +129,7 @@ export default function App() {
         category: String(form.get("category") || "general"),
         target_behavior: String(form.get("target_behavior"))
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setHabits((items) => [habit, ...items]);
       setActiveHabitId(habit.id);
     } catch (error) {
@@ -141,7 +142,8 @@ export default function App() {
   async function addLog(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeHabitId) return;
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setBusy("log");
     setError("");
     try {
@@ -155,7 +157,7 @@ export default function App() {
         context: String(form.get("context") || ""),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
-      event.currentTarget.reset();
+      formElement.reset();
       await loadHabitData(activeHabitId);
       setUrgeLevel(5);
     } catch (error) {
@@ -183,10 +185,11 @@ export default function App() {
   async function sendMessage(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!activeHabitId) return;
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const content = String(form.get("message") || "").trim();
     if (!content) return;
-    event.currentTarget.reset();
+    formElement.reset();
     await sendChatContent(content);
   }
 
