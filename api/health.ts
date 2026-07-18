@@ -1,3 +1,5 @@
+import { createApp } from "../server/app.ts";
+
 type JsonResponse = {
   status: (code: number) => {
     json: (body: unknown) => void;
@@ -6,7 +8,6 @@ type JsonResponse = {
 
 export default async function handler(_req: unknown, res: JsonResponse) {
   try {
-    const { createApp } = await import("../server/app.ts");
     createApp();
     return res.status(200).json({ ok: true, service: "urgewise", api: "ready" });
   } catch (error) {

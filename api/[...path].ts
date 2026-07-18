@@ -1,3 +1,5 @@
+import { createApp } from "../server/app.ts";
+
 type ServerApp = (req: unknown, res: unknown) => unknown;
 type JsonResponse = {
   status: (code: number) => {
@@ -9,7 +11,6 @@ let app: ServerApp | null = null;
 
 export default async function handler(req: unknown, res: JsonResponse) {
   try {
-    const { createApp } = await import("../server/app.ts");
     app ??= createApp() as unknown as ServerApp;
     return app(req, res);
   } catch (error) {
