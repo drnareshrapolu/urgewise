@@ -3,4 +3,6 @@ dist
 data
 .env
 .env.local
+*.env
+!.env.example
 coverage
