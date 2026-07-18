@@ -7,24 +7,18 @@ UrgeWise is a full-stack GenAI habit recovery coach for the PromptWars habit/add
 - React + Vite + TypeScript + Tailwind frontend
 - Express + TypeScript backend
 - Persisted SQLite database using Node's built-in SQLite module
-- JWT auth in httpOnly cookies with bcrypt password hashing
-- Seeded demo account and clearly labeled demo history
+- Open demo mode with clearly labeled seeded history
 - Habit creation and behavior logging with status, mood, urge level, trigger, context, note, and timezone
 - Dashboard with streak, trend, trigger summary, and logs-over-time chart
 - Anthropic, OpenAI, or Gemini-backed insight generation with context hashing, audit logging, and safe cache reuse
 - Coaching chat with recent habit context injected server-side
 - Safety boundary for crisis, severe withdrawal, overdose, emergency, or self-harm language
 - Quick coaching prompts, Urge Surfing reset, and a compact behavioral Skills Library
-- Tests for insight computation, auth, and safety detection
+- Tests for insight computation, demo API routes, and safety detection
 
-## Demo Account
+## Demo Mode
 
-```text
-Email: demo@urgewise.local
-Password: PromptWars2026!
-```
-
-The demo account includes seeded habit history for judging. It is intentionally labeled as seeded demo data.
+UrgeWise opens directly into the seeded demo workspace for judging. The demo history is intentionally labeled as seeded data, while new logs, habits, AI insights, and coach messages still go through the real backend.
 
 ## Setup
 
@@ -65,7 +59,7 @@ GEMINI_API_KEY=your_key_here
 GEMINI_MODEL=gemini-flash-latest
 ```
 
-ChatGPT Plus is not enough by itself for OpenAI API calls. OpenAI API usage is billed separately from ChatGPT subscriptions, so you need an API key from the OpenAI platform account with API billing enabled. If no key is configured, the app still runs, auth/logging/dashboard still work, and AI routes show a friendly real error instead of faking AI output.
+ChatGPT Plus is not enough by itself for OpenAI API calls. OpenAI API usage is billed separately from ChatGPT subscriptions, so you need an API key from the OpenAI platform account with API billing enabled. If no key is configured, the app still runs, logging/dashboard still work, and AI routes show a friendly real error instead of faking AI output.
 
 ## Run Locally
 
@@ -88,7 +82,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for GitHub, Gemini API key, and Vercel envi
 
 ## Judge Demo Flow
 
-1. Log in with the seeded demo account.
+1. Open the app directly into the seeded demo workspace.
 2. Open the existing habit and show its logged relapse/resisted history.
 3. Generate an AI insight.
 4. Add a new log entry.

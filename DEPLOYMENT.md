@@ -13,12 +13,9 @@ Create `C:\Users\USER\Documents\Main\.env`:
 ```text
 PORT=4000
 DATABASE_PATH=./data/urgewise.sqlite
-JWT_SECRET=make-a-long-random-secret
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_key_here
 GEMINI_MODEL=gemini-flash-latest
-DEMO_EMAIL=demo@urgewise.local
-DEMO_PASSWORD=PromptWars2026!
 ```
 
 Then run:
@@ -38,12 +35,9 @@ Project -> Settings -> Environment Variables
 Required:
 
 ```text
-JWT_SECRET=make-a-long-random-secret
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_key_here
 GEMINI_MODEL=gemini-flash-latest
-DEMO_EMAIL=demo@urgewise.local
-DEMO_PASSWORD=PromptWars2026!
 ```
 
 Optional alternatives:

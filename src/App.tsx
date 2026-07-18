@@ -5,7 +5,6 @@ import {
   BrainCircuit,
   CalendarCheck,
   Loader2,
-  LogOut,
   MessageCircle,
   Plus,
   RefreshCcw,
@@ -17,13 +16,9 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "./api";
-import type { ChatMessage, Habit, HabitLog, Insight, InsightContext, User } from "./types";
-
-const demoEmail = "demo@urgewise.local";
-const demoPassword = "PromptWars2026!";
+import type { ChatMessage, Habit, HabitLog, Insight, InsightContext } from "./types";
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [activeHabitId, setActiveHabitId] = useState("");
   const [logs, setLogs] = useState<HabitLog[]>([]);
@@ -33,7 +28,6 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [checkingSession, setCheckingSession] = useState(true);
   const [habitLoading, setHabitLoading] = useState(false);
   const [urgeLevel, setUrgeLevel] = useState(5);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -41,17 +35,8 @@ export default function App() {
   const activeHabit = habits.find((habit) => habit.id === activeHabitId) ?? null;
 
   useEffect(() => {
-    api
-      .me()
-      .then(({ user }) => setUser(user))
-      .catch(() => undefined)
-      .finally(() => setCheckingSession(false));
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
     void loadHabits();
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     if (!activeHabitId) return;
@@ -86,30 +71,6 @@ export default function App() {
     } finally {
       setHabitLoading(false);
     }
-  }
-
-  async function handleAuth(email: string, password: string, mode: "login" | "signup") {
-    setBusy(mode);
-    setError("");
-    try {
-      const { user } = mode === "login" ? await api.login(email, password) : await api.signup(email, password);
-      setUser(user);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Authentication failed");
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function logout() {
-    await api.logout();
-    setUser(null);
-    setHabits([]);
-    setActiveHabitId("");
-    setLogs([]);
-    setMessages([]);
-    setContext(null);
-    setInsight(null);
   }
 
   async function addHabit(event: React.FormEvent<HTMLFormElement>) {
@@ -202,25 +163,6 @@ export default function App() {
 
   const chartData = useMemo(() => buildChartData(logs), [logs]);
 
-  if (checkingSession) {
-    return (
-      <main className="auth-shell">
-        <section className="auth-copy">
-          <div className="brand-mark">
-            <BrainCircuit size={34} />
-          </div>
-          <p className="eyebrow">UrgeWise</p>
-          <h1>Checking session</h1>
-          <p>Loading your habit coach workspace.</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (!user) {
-    return <AuthScreen onSubmit={handleAuth} busy={busy} error={error} />;
-  }
-
   return (
     <main className="min-h-screen bg-paper text-ink">
       <header className="border-b border-stone-200 bg-white/85 backdrop-blur">
@@ -235,10 +177,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-stone-600">{user.email}</span>
-            <button className="icon-button" onClick={logout} aria-label="Log out" title="Log out">
-              <LogOut size={18} />
-            </button>
+            <span className="rounded-md border border-stone-200 bg-stone-50 px-3 py-1 text-sm text-stone-600">Demo mode</span>
           </div>
         </div>
       </header>
@@ -469,69 +408,6 @@ export default function App() {
           )}
         </section>
       </div>
-    </main>
-  );
-}
-
-function AuthScreen({ onSubmit, busy, error }: { onSubmit: (email: string, password: string, mode: "login" | "signup") => void; busy: string; error: string }) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
-
-  return (
-    <main className="auth-shell">
-      <section className="auth-copy">
-        <div className="brand-mark">
-          <BrainCircuit size={34} />
-        </div>
-        <p className="eyebrow">GenAI habit coach</p>
-        <h1>UrgeWise</h1>
-        <p>
-          A GenAI habit recovery coach that turns real logged behavior into live, personalized nudges, pattern insight, and a practical coaching conversation.
-        </p>
-        <div className="safety-note">
-          <ShieldCheck size={18} />
-          Supportive behavior coaching with a professional-help boundary for crisis or medical-risk language.
-        </div>
-      </section>
-
-      <section className="auth-panel">
-        <div className="segmented" role="tablist" aria-label="Authentication mode">
-          <button className={mode === "login" ? "selected" : ""} onClick={() => setMode("login")} type="button">
-            Login
-          </button>
-          <button className={mode === "signup" ? "selected" : ""} onClick={() => setMode("signup")} type="button">
-            Sign up
-          </button>
-        </div>
-        <form
-          key={mode}
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            onSubmit(String(form.get("email")), String(form.get("password")), mode);
-          }}
-        >
-          <label className="field">
-            <span>Email</span>
-            <input name="email" type="email" defaultValue={mode === "login" ? demoEmail : ""} required />
-          </label>
-          <label className="field">
-            <span>Password</span>
-            <input name="password" type="password" defaultValue={mode === "login" ? demoPassword : ""} required minLength={8} />
-          </label>
-          {error && (
-            <div className="alert">
-              <AlertTriangle size={18} />
-              <span>{error}</span>
-            </div>
-          )}
-          <button className="primary-button w-full" disabled={busy === mode}>
-            {busy === mode ? <Loader2 className="animate-spin" size={16} /> : <BrainCircuit size={16} />}
-            {mode === "login" ? "Enter demo" : "Create account"}
-          </button>
-        </form>
-        <p className="mt-4 text-sm text-stone-600">Demo account is clearly seeded for judging: {demoEmail}</p>
-      </section>
     </main>
   );
 }

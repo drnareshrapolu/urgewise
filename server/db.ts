@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import bcrypt from "bcryptjs";
 import { config } from "./config.ts";
 import type { Habit, HabitLog } from "./insights.ts";
 
@@ -107,7 +106,7 @@ export function seedDemo(db: Db): void {
   db.prepare("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)").run(
     userId,
     config.demoEmail,
-    bcrypt.hashSync(config.demoPassword, 10),
+    "demo-mode-disabled",
     now.toISOString()
   );
   db.prepare("INSERT INTO habits (id, user_id, name, category, target_behavior, created_at) VALUES (?, ?, ?, ?, ?, ?)").run(

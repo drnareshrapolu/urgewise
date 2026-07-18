@@ -65,20 +65,18 @@ async function run() {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "urgewise-"));
   const db = openDatabase(path.join(tempDir, "test.sqlite"));
   const app = createApp(db);
-  const agent = request.agent(app);
 
-  await request(app).get("/api/habits").expect(401);
-  const signup = await agent.post("/api/auth/signup").send({ email: "tester@example.com", password: "strong-password" }).expect(201);
-  assert.equal(signup.body.user.email, "tester@example.com", "signup should return the new user");
+  const seededHabits = await request(app).get("/api/habits").expect(200);
+  assert.equal(seededHabits.body.habits.length, 1, "demo mode should expose the seeded habit without login");
 
-  const createdHabit = await agent
+  const createdHabit = await request(app)
     .post("/api/habits")
     .send({ name: "Sugar snacking", category: "food", target_behavior: "Avoid candy after lunch" })
     .expect(201);
-  assert.equal(createdHabit.body.habit.name, "Sugar snacking", "authenticated users should create habits");
+  assert.equal(createdHabit.body.habit.name, "Sugar snacking", "demo mode should create real habits");
 
-  const habits = await agent.get("/api/habits").expect(200);
-  assert.equal(habits.body.habits.length, 1, "created habit should be listed for the signed-in user");
+  const habits = await request(app).get("/api/habits").expect(200);
+  assert.equal(habits.body.habits.length, 2, "created habit should be listed for the demo user");
 
   db.close();
   fs.rmSync(tempDir, { recursive: true, force: true });

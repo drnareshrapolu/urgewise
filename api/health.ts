@@ -14,7 +14,7 @@ export default async function handler(_req: unknown, res: JsonResponse) {
     return res.status(500).json({
       ok: false,
       service: "urgewise",
-      error: "UrgeWise API failed to initialize. Check JWT_SECRET and the Vercel function logs."
+      error: "UrgeWise API failed to initialize. Check the Vercel function logs."
     });
   }
 }
