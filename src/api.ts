@@ -8,9 +8,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options
   });
 
-  const payload = await response.json().catch(() => ({}));
+  const responseCopy = response.clone();
+  const payload = await response.json().catch(async () => {
+    const text = await responseCopy.text().catch(() => "");
+    return { error: text || response.statusText };
+  });
   if (!response.ok) {
-    throw new Error(payload.error ?? "Request failed");
+    throw new Error(payload.error ? `${response.status}: ${payload.error}` : `${response.status}: Request failed`);
   }
   return payload as T;
 }
