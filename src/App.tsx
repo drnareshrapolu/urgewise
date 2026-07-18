@@ -482,7 +482,7 @@ function AuthScreen({ onSubmit, busy, error }: { onSubmit: (email: string, passw
         <div className="brand-mark">
           <BrainCircuit size={34} />
         </div>
-        <p className="eyebrow">PromptWars build</p>
+        <p className="eyebrow">GenAI habit coach</p>
         <h1>UrgeWise</h1>
         <p>
           A GenAI habit recovery coach that turns real logged behavior into live, personalized nudges, pattern insight, and a practical coaching conversation.
