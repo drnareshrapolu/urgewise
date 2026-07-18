@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
-import { config } from "./config.ts";
-import type { Db } from "./db.ts";
-import { computeInsightContext, hashContext, triggeredBy } from "./insights.ts";
-import type { Habit, HabitLog, InsightContext } from "./insights.ts";
+import { config } from "./config.js";
+import type { Db } from "./db.js";
+import { computeInsightContext, hashContext, triggeredBy } from "./insights.js";
+import type { Habit, HabitLog, InsightContext } from "./insights.js";
 
 export const MINDSHIFT_SYSTEM_PROMPT = `You are UrgeWise, a supportive but direct behavior-change coach.
 You are not a doctor, therapist, emergency service, or substitute for professional care.

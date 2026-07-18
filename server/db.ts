@@ -3,8 +3,8 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 import Database from "better-sqlite3";
-import { config } from "./config.ts";
-import type { Habit, HabitLog } from "./insights.ts";
+import { config } from "./config.js";
+import type { Habit, HabitLog } from "./insights.js";
 
 export type Db = Database.Database;
 

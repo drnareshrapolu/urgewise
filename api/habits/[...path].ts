@@ -1,3 +1,3 @@
-import app from "../[...path].ts";
+import handler from "../../server/vercel-handler.js";
 
-export default app;
+export default handler;

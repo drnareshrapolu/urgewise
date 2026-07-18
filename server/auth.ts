@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { config } from "./config.ts";
-import type { Db } from "./db.ts";
+import { config } from "./config.js";
+import type { Db } from "./db.js";
 
 export type AuthUser = { id: string; email: string };
 

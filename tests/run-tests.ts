@@ -3,11 +3,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import request from "supertest";
-import { createApp } from "../server/app.ts";
-import { openDatabase } from "../server/db.ts";
-import { computeInsightContext, hashContext, triggeredBy } from "../server/insights.ts";
-import type { Habit, HabitLog } from "../server/insights.ts";
-import { detectSafetyRisk, safetyResponse } from "../server/safety.ts";
+import { createApp } from "../server/app.js";
+import { openDatabase } from "../server/db.js";
+import { computeInsightContext, hashContext, triggeredBy } from "../server/insights.js";
+import type { Habit, HabitLog } from "../server/insights.js";
+import { detectSafetyRisk, safetyResponse } from "../server/safety.js";
 
 const habit: Habit = {
   id: "habit-1",
