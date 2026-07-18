@@ -6,6 +6,12 @@ type JsonResponse = {
   };
 };
 
+function initializationMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (/^(JWT_SECRET|SEED_USER_)/.test(message)) return message;
+  return "UrgeWise API failed to initialize. Check the Vercel function logs.";
+}
+
 export default async function handler(_req: unknown, res: JsonResponse) {
   try {
     createApp();
@@ -15,7 +21,7 @@ export default async function handler(_req: unknown, res: JsonResponse) {
     return res.status(500).json({
       ok: false,
       service: "urgewise",
-      error: "UrgeWise API failed to initialize. Check the Vercel function logs."
+      error: initializationMessage(error)
     });
   }
 }

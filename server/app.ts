@@ -3,7 +3,7 @@ import path from "node:path";
 import bcrypt from "bcryptjs";
 import cookieParser from "cookie-parser";
 import express from "express";
-import { config } from "./config.ts";
+import { config, validateRuntimeConfig } from "./config.ts";
 import { clearSessionCookie, requireAuth, setSessionCookie, signSession } from "./auth.ts";
 import type { Db } from "./db";
 import { getHabitForUser, getLogsForHabit, openDatabase } from "./db.ts";
@@ -55,7 +55,9 @@ function publicAiError(error: unknown, fallback: string): { status: number; mess
   return { status: status || 500, message };
 }
 
-export function createApp(db: Db = openDatabase()) {
+export function createApp(db?: Db) {
+  validateRuntimeConfig();
+  db ??= openDatabase();
   const app = express();
   const authRequired = requireAuth(db);
   app.disable("x-powered-by");

@@ -26,14 +26,16 @@ export const config = {
   isProduction: process.env.NODE_ENV === "production"
 };
 
-if (config.isProduction && (config.jwtSecret === "dev-only-change-me" || config.jwtSecret.length < 32)) {
-  throw new Error("JWT_SECRET must be set to at least 32 characters in production");
-}
+export function validateRuntimeConfig(): void {
+  if (config.isProduction && (config.jwtSecret === "dev-only-change-me" || config.jwtSecret.length < 32)) {
+    throw new Error("JWT_SECRET must be set to at least 32 characters in Production");
+  }
 
-if (Boolean(config.seedUserEmail) !== Boolean(config.seedUserPassword)) {
-  throw new Error("SEED_USER_EMAIL and SEED_USER_PASSWORD must be configured together");
-}
+  if (Boolean(config.seedUserEmail) !== Boolean(config.seedUserPassword)) {
+    throw new Error("SEED_USER_EMAIL and SEED_USER_PASSWORD must be configured together in Production");
+  }
 
-if (config.seedUserPassword && config.seedUserPassword.length < 12) {
-  throw new Error("SEED_USER_PASSWORD must be at least 12 characters");
+  if (config.seedUserPassword && config.seedUserPassword.length < 12) {
+    throw new Error("SEED_USER_PASSWORD must be at least 12 characters");
+  }
 }
