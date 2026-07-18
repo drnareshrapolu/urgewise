@@ -6,7 +6,7 @@ UrgeWise is a full-stack GenAI habit recovery coach for the PromptWars habit/add
 
 - React, Vite, TypeScript, and Tailwind frontend
 - Express and TypeScript backend
-- SQLite persistence using Node's built-in SQLite module
+- SQLite persistence using the production-supported `better-sqlite3` driver
 - Email/password authentication with bcrypt and signed HTTP-only cookies
 - Signup, login, logout, and protected habit routes
 - Habit creation and behavior logging with status, mood, urge, trigger, context, note, and timezone

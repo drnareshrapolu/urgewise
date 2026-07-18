@@ -1,16 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
 import bcrypt from "bcryptjs";
+import Database from "better-sqlite3";
 import { config } from "./config.ts";
 import type { Habit, HabitLog } from "./insights.ts";
 
-export type Db = DatabaseSync;
+export type Db = Database.Database;
 
 export function openDatabase(databasePath = config.databasePath): Db {
   fs.mkdirSync(path.dirname(databasePath), { recursive: true });
-  const db = new DatabaseSync(databasePath);
+  const db = new Database(databasePath);
   db.exec("PRAGMA foreign_keys = ON");
   migrate(db);
   seedConfiguredUser(db);
