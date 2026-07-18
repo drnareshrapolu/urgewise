@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import request from "supertest";
+import { resolveGatewayPath } from "../api/gateway.js";
 import { createApp } from "../server/app.js";
 import { openDatabase } from "../server/db.js";
 import { computeInsightContext, hashContext, triggeredBy } from "../server/insights.js";
@@ -36,6 +37,9 @@ function log(offsetDays: number, status: HabitLog["status"], trigger: string): H
 }
 
 async function run() {
+  assert.equal(resolveGatewayPath("/api/auth/me"), "/api/auth/me", "gateway should accept application API paths");
+  assert.equal(resolveGatewayPath("/api/../server"), null, "gateway should reject traversal paths");
+
   const context = computeInsightContext(
     habit,
     [log(-10, "relapse", "stress"), log(-9, "relapse", "stress"), log(-2, "resisted", "boredom"), log(-1, "resisted", "boredom")],

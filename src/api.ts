@@ -1,5 +1,6 @@
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
+  const gatewayUrl = `/api/gateway?path=${encodeURIComponent(path)}`;
+  const response = await fetch(gatewayUrl, {
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
